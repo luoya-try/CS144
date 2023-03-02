@@ -25,19 +25,11 @@ size_t ByteStream::write(const string &data) {
 
 //! \param[in] len bytes will be copied from the output size of the buffer
 string ByteStream::peek_output(const size_t len) const {
-    string str;
-    size_t cnt = 0;
-    for(auto it: myStream) {
-        if(cnt == len) break;
-        str = str + it;
-        cnt ++;
-    }
-    return str;
+    return string(myStream.begin(), myStream.begin() + len);
 }
 
 //! \param[in] len bytes will be removed from the output size of the buffer
 void ByteStream::pop_output(const size_t len) { 
-    if(len > size) {set_error(); return;}
     totPop += len;
     size -= len;
     for(size_t i = 0; i < len; i ++) myStream.pop_front();
@@ -47,13 +39,9 @@ void ByteStream::pop_output(const size_t len) {
 //! \param[in] len bytes will be popped and returned
 //! \returns a string
 std::string ByteStream::read(const size_t len) {
-    if(len > size) {set_error(); return {};}
-    size_t cnt = 0;
-    string str{};
-    for(auto it: myStream) {
-        if(cnt == len) break;
-        str = str + it;
-    } pop_output(len);
+    size_t ac_len = min(len, buffer_size());
+    string str = peek_output(ac_len);
+    pop_output(ac_len);
     return str;
 }
 
