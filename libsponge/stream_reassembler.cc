@@ -1,12 +1,14 @@
 #include "stream_reassembler.hh"
 #include <map>
-
 using namespace std;
 
+StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity), _capacity(capacity) {}
+
 void StreamReassembler::set_eof_index(size_t index, const bool eof) { if(eof) eof_index = index, eof_flag = true;}
+
 void StreamReassembler::set_eof(size_t index) { if(eof_flag && index == eof_index) _output.end_input();}
 
-void StreamReassembler::assemble_merge(){
+void StreamReassembler::output_merge(){
     vector<size_t> delete_indexs;
     for(auto it: _unassembled_bytes){
         if(it.first <= expected_index){
@@ -22,7 +24,8 @@ void StreamReassembler::assemble_merge(){
     }
     for(auto it: delete_indexs) _unassembled_bytes.erase(it);
 }
-void StreamReassembler::unassemble_merge(){
+
+void StreamReassembler::unassemble_bytes_update(){
     map<size_t, string> mp;
     size_of_unassembled_bytes = 0;
     size_t end_index{}, start_index{}; 
@@ -42,7 +45,6 @@ void StreamReassembler::unassemble_merge(){
     }
     _unassembled_bytes = move(mp);
 }
-StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity), _capacity(capacity) {}
 
 //! \details This function accepts a substring (aka a segment) of bytes,
 //! possibly out-of-order, from the logical stream, and assembles any newly
@@ -64,11 +66,10 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     }else set_eof_index(index + data.length() - 1, eof);
     _unassembled_bytes[index] = effective_data;
 
-    assemble_merge();
-    unassemble_merge();
+    output_merge();
+    unassemble_bytes_update();
 
 }
 
 size_t StreamReassembler::unassembled_bytes() const { return size_of_unassembled_bytes; }
-
 bool StreamReassembler::empty() const { return unassembled_bytes() == 0; }

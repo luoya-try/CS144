@@ -28,10 +28,10 @@ class StreamReassembler {
     void set_eof_index(size_t, bool);
     void set_eof(size_t);
     //! \brief Merging the unassembled bytes [that are included in _input or overlap with _output] into _output
-    void assemble_merge();
+    void output_merge();
     //! \brief Merging the unassembled bytes [that are included in _input or overlap with the last unassembled byte] 
     //! into the last unassembled byte
-    void unassemble_merge();
+    void unassemble_bytes_update();
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
