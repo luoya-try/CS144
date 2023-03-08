@@ -18,10 +18,10 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
     //Push any data, or end-of-stream marker, to the StreamReassembler.
     //Use the index of the last reassembled byte as the checkpoint.
     uint64_t checkpoint = stream_out().bytes_written();
-    uint64_t index = unwrap(header.seqno, isn, checkpoint) - 1;
+    uint64_t abs_seqno = unwrap(header.seqno + header.syn, isn, checkpoint);
+    uint64_t index = abs_seqno - 1;
     string data = seg.payload().copy();
     _reassembler.push_substring(data, index, header.fin);
-
 }
 
 optional<WrappingInt32> TCPReceiver::ackno() const { 

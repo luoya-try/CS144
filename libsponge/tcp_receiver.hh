@@ -15,11 +15,13 @@
 class TCPReceiver {
     //! Our data structure for re-assembling bytes.
     StreamReassembler _reassembler;
-
     //! The maximum number of bytes we'll store.
     size_t _capacity;
+    //!  Whether TCP connection is built
     bool is_syn_received{};
+    //!  Whether TCP connection is closed
     bool is_fin_received{}; 
+    //!  the initial seqno
     WrappingInt32 isn{0};
 
   public:

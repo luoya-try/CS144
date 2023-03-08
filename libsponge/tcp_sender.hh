@@ -9,6 +9,31 @@
 #include <functional>
 #include <queue>
 
+//! \brief  An alarm that can be started at a certain
+//! time, and goes off (or “expires”) once the RTO has elapsed.
+class  RetransmissionTimer{
+  public:
+    unsigned int _retransmission_timeout{};
+    unsigned int _initial_retransmission_timeout{};
+    unsigned int _RTO{};
+    bool _on{};
+    bool _expired{};
+  
+    RetransmissionTimer(const unsigned int initial_retransmission_timeout)
+    :_initial_retransmission_timeout(initial_retransmission_timeout){set_RTO_initial();}
+
+    void set_RTO_initial() {_RTO = _initial_retransmission_timeout;}
+    void half_RTO() {_RTO /= 2;}
+    void double_RTO() {_RTO *= 2;}
+    bool is_on() {return _on;}
+    bool is_expired() {return _expired;}
+    void start(){_retransmission_timeout = _RTO; _on = true; _expired = false;}
+    void stop() {_on = false;}
+    void passtime(const unsigned int _passtime){
+      if(_retransmission_timeout > _passtime) _retransmission_timeout -= _passtime;
+      else _expired = true;
+    }
+};
 //! \brief The "sender" part of a TCP implementation.
 
 //! Accepts a ByteStream, divides it up into segments and sends the
@@ -17,9 +42,18 @@
 //! segments if the retransmission timer expires.
 class TCPSender {
   private:
+    //! queue of outstanding tcp segments
+    std::queue<TCPSegment> _outstanding_segments{};
+    //! the window size of the receiver, that the length of the TCP segment cannot exceed
+    uint16_t _window_size{1};
+    //! the max abs_seqno the receiver can receive
+    uint64_t _upper_bound{};
+    //! count how many times the _consecutive_retransmissions happened.
+    unsigned int _consecutive_retransmissions{};
     //! our initial sequence number, the number for our SYN.
     WrappingInt32 _isn;
-
+    //! number of bytes that are sent but not acknowleged
+    size_t _bytes_in_flight{};
     //! outbound queue of segments that the TCPSender wants sent
     std::queue<TCPSegment> _segments_out{};
 
@@ -31,6 +65,8 @@ class TCPSender {
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+    //! timer
+    RetransmissionTimer timer;
 
   public:
     //! Initialize a TCPSender
@@ -62,7 +98,13 @@ class TCPSender {
 
     //! \name Accessors
     //!@{
+    
+    //! \brief everytime sending a segment, the timer should be started
+    void segment_sending(TCPSegment& tcp_seg){ _segments_out.push(tcp_seg); if(!timer.is_on()) timer.start();}
 
+    //! \brief everytime pushing or poping an outstanding segment, the number of bytes in flight should be updated
+    void outstanding_push(TCPSegment& tcp_seg){ _outstanding_segments.push(tcp_seg); _bytes_in_flight += tcp_seg.length_in_sequence_space();}
+    void outstanding_pop() { if(!_outstanding_segments.empty()){ _bytes_in_flight -= _outstanding_segments.front().length_in_sequence_space(); _outstanding_segments.pop();}}
     //! \brief How many sequence numbers are occupied by segments sent but not yet acknowledged?
     //! \note count is in "sequence space," i.e. SYN and FIN each count for one byte
     //! (see TCPSegment::length_in_sequence_space())
