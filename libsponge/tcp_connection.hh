@@ -21,6 +21,13 @@ class TCPConnection {
     //! in case the remote TCPConnection doesn't know we've received its whole stream?
     bool _linger_after_streams_finish{true};
 
+    //! to check whether the tcp connection is active
+    bool _is_rst_set{};
+    
+    //! when tick is called, time increases; when receiving a segment, time is set to zero
+    size_t _time_since_last_segment_received{};
+
+    
   public:
     //! \name "Input" interface for the writer
     //!@{
@@ -44,6 +51,10 @@ class TCPConnection {
 
     //! \brief The inbound byte stream received from the peer
     ByteStream &inbound_stream() { return _receiver.stream_out(); }
+    const ByteStream &inbound_stream() const { return _receiver.stream_out(); }
+    //! \brief The outbound stream snet by the sender to its peer
+    ByteStream &outbound_stream() { return _sender.stream_in(); }
+    const ByteStream &outbound_stream() const{ return _sender.stream_in(); }
     //!@}
 
     //! \name Accessors used for testing
@@ -78,6 +89,12 @@ class TCPConnection {
     //! \returns `true` if either stream is still running or if the TCPConnection is lingering
     //! after both streams have finished (e.g. to ACK retransmissions from the peer)
     bool active() const;
+
+    //! \brief transform the segs from _sender's segments_out() queue to the connection's segments_out() queue
+    void transform_segments_out();
+
+    //! \brief send a rst segment
+    void send_rst_seg();
     //!@}
 
     //! Construct a new connection from a configuration

@@ -8,17 +8,18 @@
 
 #include <functional>
 #include <queue>
+#include <iostream>
 
 //! \brief  An alarm that can be started at a certain
 //! time, and goes off (or “expires”) once the RTO has elapsed.
 class  RetransmissionTimer{
-  public:
+  private:
     unsigned int _retransmission_timeout{};
     unsigned int _initial_retransmission_timeout{};
     unsigned int _RTO{};
     bool _on{};
     bool _expired{};
-  
+  public:
     RetransmissionTimer(const unsigned int initial_retransmission_timeout)
     :_initial_retransmission_timeout(initial_retransmission_timeout){set_RTO_initial();}
 
@@ -98,9 +99,12 @@ class TCPSender {
 
     //! \name Accessors
     //!@{
-    
+
     //! \brief everytime sending a segment, the timer should be started
-    void segment_sending(TCPSegment& tcp_seg){ _segments_out.push(tcp_seg); if(!timer.is_on()) timer.start();}
+    void segment_sending(TCPSegment& tcp_seg){ 
+      _segments_out.push(tcp_seg); 
+      if(!timer.is_on()) timer.start();
+    }
 
     //! \brief everytime pushing or poping an outstanding segment, the number of bytes in flight should be updated
     void outstanding_push(TCPSegment& tcp_seg){ _outstanding_segments.push(tcp_seg); _bytes_in_flight += tcp_seg.length_in_sequence_space();}

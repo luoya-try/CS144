@@ -52,6 +52,9 @@ class TCPReceiver {
     //! accepted by the receiver) and (b) the sequence number of the
     //! beginning of the window (the ackno).
     size_t window_size() const;
+    //! \brief whether the receiver received a syn segment
+    bool syn_received() {return is_syn_received;}
+    bool fin_received() {return is_fin_received;}
     //!@}
 
     //! \brief number of bytes stored but not yet reassembled

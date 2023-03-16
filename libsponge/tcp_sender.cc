@@ -62,12 +62,14 @@ void TCPSender::fill_window() {
 //! \param ackno The remote receiver's ackno (acknowledgment number)
 //! \param window_size The remote receiver's advertised window size
 void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) { 
-    _window_size = window_size;
     // check whether the receiver gives the sender a new ackno
     bool is_ackno_effective{}; 
     uint64_t abs_ackno = unwrap(ackno, _isn, next_seqno_absolute());
     if(abs_ackno > next_seqno_absolute()) return;
     
+    _window_size = window_size;
+
+    // remove the acknowledged segments from the _outgoing segment
     _upper_bound = (window_size == 0) ? abs_ackno + 1 : abs_ackno + window_size;
     while(!_outstanding_segments.empty()){
         uint64_t abs_seqno = unwrap(_outstanding_segments.front().header().seqno, _isn, next_seqno_absolute());
@@ -77,26 +79,31 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
             outstanding_pop();
         } else break;
     }
+
     if(is_ackno_effective){
         // (a) Set the RTO back to its “initial value.”
         timer.set_RTO_initial();
         // (b) If any outstanding data, restart the retransmission timer
+        // cout << "1 timer start\n";
         timer.start();
         // (c) Reset the count of “consecutive retransmissions” back to zero.
         _consecutive_retransmissions = 0;
     }
-    //5. When all outstanding data has been acknowledged, stop the retransmission timer.
-    if(_outstanding_segments.empty()) timer.stop();
-    // cout << "empty: " << _outstanding_segments.empty() << endl;
-    // cout << "nxt: " << next_seqno_absolute() << " flight: " << bytes_in_flight() << endl;
+    //When all outstanding data has been acknowledged, stop the retransmission timer.
+    if(_outstanding_segments.empty()) {
+        // cout << "timer stop\n";
+        timer.stop();
+    }
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
 void TCPSender::tick(const size_t ms_since_last_tick) { 
     if(timer.is_on()){
         timer.passtime(ms_since_last_tick);
+        // cout << "ms since last tick: " << ms_since_last_tick << endl;
         //if the retransmission timer has expired
         if(timer.is_expired()){
+            // cout << "is expired!\n";
             //(a) Retransmit the earliest outgoing segment
             if(!_outstanding_segments.empty()){
                 segment_sending(_outstanding_segments.front());
@@ -104,9 +111,11 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
             // (b) If the window size is nonzero: increment the number of consecutive retransmissions and exponential backoff
             if(_window_size != 0){
                 _consecutive_retransmissions ++;
+                // cout << "double the rto\n";
                 timer.double_RTO();
             }
             // (c) Reset the retransmission timer
+            // cout << "2 timer start\n";
             timer.start();
         }
     }
@@ -115,7 +124,8 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
 unsigned int TCPSender::consecutive_retransmissions() const { return _consecutive_retransmissions; }
 
 void TCPSender::send_empty_segment() {
+    // cout << "send empty" << endl;
     TCPSegment tcp_segment;
     tcp_segment.header().seqno = next_seqno();
-    segment_sending(tcp_segment);
+    _segments_out.push(tcp_segment);
 }
