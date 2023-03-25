@@ -85,8 +85,8 @@ class BufferList {
     //! \brief Append a BufferList
     void append(const BufferList &other);
 
-    //! \brief Append a Buffer
-    void append(const Buffer &other);
+    // //! \brief Append a Buffer
+    void push_back(const Buffer& buf);
     //! \brief Transform to a Buffer
     //! \note Throws an exception unless BufferList is contiguous
     operator Buffer() const;

@@ -26,9 +26,11 @@ void BufferList::append(const BufferList &other) {
         _buffers.push_back(buf);
     }
 }
-void BufferList::append(const Buffer &other) {
-    _buffers.push_back(other);
+
+void BufferList::push_back(const Buffer& buf) {
+    _buffers.push_back(buf);
 }
+
 BufferList::operator Buffer() const {
     switch (_buffers.size()) {
         case 0:
@@ -67,8 +69,20 @@ string BufferList::peak_out(size_t len) const{
 }
 string BufferList::read_prefix(size_t len) {
     len = min(len, size());
-    std::string ret = peak_out(len);
-    remove_prefix(len);
+    std::string ret;
+    ret.reserve(len);
+    while(len){
+        Buffer buf = _buffers.front();
+        if(buf.size() <= len){
+            len -= buf.size();
+            ret.append(buf.str());
+            _buffers.pop_front();
+            
+        } else{
+            ret.append(buf.peak_out(len));
+            break;
+        }
+    }
     return move(ret);
 }
 

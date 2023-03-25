@@ -12,9 +12,12 @@ using namespace std;
 ByteStream::ByteStream(const size_t capacity) : mxSize(capacity){
 }
 size_t ByteStream::write(const string &data) {
+    string copy = data;
     size_t len = data.length();
     size_t acceptedNum = min(len, mxSize - size);
-    myStream.append(Buffer(data.substr(0, acceptedNum)));
+    if(len > mxSize - size)
+        myStream.push_back(Buffer(copy.substr(0, acceptedNum)));
+    else myStream.push_back(Buffer(move(copy)));
     size += acceptedNum;
     totWritten += acceptedNum;
     return acceptedNum;
@@ -30,7 +33,7 @@ void ByteStream::pop_output(const size_t len) {
     size_t acceptedNum = min(len, size);
     totPop += acceptedNum;
     size -= acceptedNum;
-    myStream.remove_prefix(len);
+    myStream.remove_prefix(acceptedNum);
  }
 
 //! Read (i.e., copy and then pop) the next "len" bytes of the stream
@@ -38,9 +41,8 @@ void ByteStream::pop_output(const size_t len) {
 //! \returns a string
 std::string ByteStream::read(const size_t len) {
     size_t acceptedNum = min(len, size);
-    string str = myStream.peak_out(len);
-    myStream.remove_prefix(len);
-    size -= acceptedNum;
+    string str = myStream.peak_out(acceptedNum);
+    pop_output(acceptedNum);
     return move(str);
 }
 
