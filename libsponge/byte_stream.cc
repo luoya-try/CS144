@@ -9,40 +9,39 @@ using namespace std;
 
 using namespace std;
 
-ByteStream::ByteStream(const size_t capacity) : myStream({}), mxSize(capacity), size(0), totWritten(0), totPop(0) {
+ByteStream::ByteStream(const size_t capacity) : mxSize(capacity){
 }
 size_t ByteStream::write(const string &data) {
     size_t len = data.length();
     size_t acceptedNum = min(len, mxSize - size);
-    
-    for(size_t i = 0; i < acceptedNum; i ++) {
-        myStream.push_back(data[i]);
-    }
-    totWritten += acceptedNum;
+    myStream.append(Buffer(data.substr(0, acceptedNum)));
     size += acceptedNum;
+    totWritten += acceptedNum;
     return acceptedNum;
 }
 
 //! \param[in] len bytes will be copied from the output size of the buffer
 string ByteStream::peek_output(const size_t len) const {
-    return string(myStream.begin(), myStream.begin() + len);
+    return myStream.peak_out(min(myStream.size(), len));
 }
 
 //! \param[in] len bytes will be removed from the output size of the buffer
 void ByteStream::pop_output(const size_t len) { 
-    totPop += len;
-    size -= len;
-    for(size_t i = 0; i < len; i ++) myStream.pop_front();
+    size_t acceptedNum = min(len, size);
+    totPop += acceptedNum;
+    size -= acceptedNum;
+    myStream.remove_prefix(len);
  }
 
 //! Read (i.e., copy and then pop) the next "len" bytes of the stream
 //! \param[in] len bytes will be popped and returned
 //! \returns a string
 std::string ByteStream::read(const size_t len) {
-    size_t ac_len = min(len, buffer_size());
-    string str = peek_output(ac_len);
-    pop_output(ac_len);
-    return str;
+    size_t acceptedNum = min(len, size);
+    string str = myStream.peak_out(len);
+    myStream.remove_prefix(len);
+    size -= acceptedNum;
+    return move(str);
 }
 
 void ByteStream::end_input() { _input_ended = true;}

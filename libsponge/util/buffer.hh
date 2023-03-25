@@ -47,6 +47,11 @@ class Buffer {
     //! \brief Discard the first `n` bytes of the string (does not require a copy or move)
     //! \note Doesn't free any memory until the whole string has been discarded in all copies of the Buffer.
     void remove_prefix(const size_t n);
+
+    //! \brief make a copy of the prefix substring of 'n' bytes, without changing the buffer
+    std::string peak_out(const size_t n) const;
+    //! \brief read and discard the prefix substring with len of n
+    std::string read_prefix(const size_t n);
 };
 
 //! \brief A reference-counted discontiguous string that can discard bytes from the front
@@ -80,6 +85,8 @@ class BufferList {
     //! \brief Append a BufferList
     void append(const BufferList &other);
 
+    //! \brief Append a Buffer
+    void append(const Buffer &other);
     //! \brief Transform to a Buffer
     //! \note Throws an exception unless BufferList is contiguous
     operator Buffer() const;
@@ -92,6 +99,12 @@ class BufferList {
 
     //! \brief Make a copy to a new std::string
     std::string concatenate() const;
+
+    //! \brief read and discard the first 'n' length of prefix
+    std::string read_prefix(size_t n);
+    
+    //! \brief make a copy of the prefix substring of 'n' bytes, without changing the buffer
+    std::string peak_out(const size_t n) const;
 };
 
 //! \brief A non-owning temporary view (similar to std::string_view) of a discontiguous string

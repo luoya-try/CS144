@@ -11,13 +11,24 @@ void Buffer::remove_prefix(const size_t n) {
         _storage.reset();
     }
 }
-
+string Buffer::peak_out(size_t n) const{
+    n = min(n, str().size());
+    return move(copy().substr(0, n));
+}
+string Buffer::read_prefix(size_t n) {
+    n = min(n, str().size());
+    string ret = peak_out(n);
+    remove_prefix(n);
+    return move(ret);
+}
 void BufferList::append(const BufferList &other) {
     for (const auto &buf : other._buffers) {
         _buffers.push_back(buf);
     }
 }
-
+void BufferList::append(const Buffer &other) {
+    _buffers.push_back(other);
+}
 BufferList::operator Buffer() const {
     switch (_buffers.size()) {
         case 0:
@@ -30,7 +41,6 @@ BufferList::operator Buffer() const {
         }
     }
 }
-
 string BufferList::concatenate() const {
     std::string ret;
     ret.reserve(size());
@@ -38,6 +48,28 @@ string BufferList::concatenate() const {
         ret.append(buf);
     }
     return ret;
+}
+string BufferList::peak_out(size_t len) const{
+    std::string ret;
+    ret.reserve(len);
+    for (auto &buf : _buffers) {
+        if(buf.size() <= len)
+        {
+            ret.append(buf);
+            len -= buf.size();
+            
+        } else{
+            ret.append(buf.peak_out(len));
+            break;
+        }
+    }
+    return move(ret);
+}
+string BufferList::read_prefix(size_t len) {
+    len = min(len, size());
+    std::string ret = peak_out(len);
+    remove_prefix(len);
+    return move(ret);
 }
 
 size_t BufferList::size() const {

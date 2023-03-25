@@ -4,6 +4,7 @@
 #include <string>
 #include <queue>
 #include <deque>
+#include "./util/buffer.hh"
 using namespace std;
 //! \brief An in-order byte stream.
 
@@ -13,10 +14,10 @@ using namespace std;
 class ByteStream {
   private:
     // Your code here -- add private members as necessary.
-    deque<char> myStream;
+    BufferList myStream{};
     int mxSize;
-    size_t size;
-    int totWritten, totPop;
+    size_t size{};
+    int totWritten{}, totPop{};
     // Hint: This doesn't need to be a sophisticated data structure at
     // all, but if any of your tests are taking longer than a second,
     // that's a sign that you probably want to keep exploring
